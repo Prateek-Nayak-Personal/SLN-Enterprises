@@ -671,22 +671,48 @@ html,body {
               <div class="rc-unit">₹</div>
             </div>
             <div class="rc">
-              <div class="rc-lbl">Mfg Cost</div>
-              <div class="rc-val" id="r-mfg">—</div>
+              <div class="rc-lbl">Margin (<span id="r-mgn-pct">0</span>%)</div>
+              <div class="rc-val" id="r-mgn">—</div>
+              <div class="rc-unit">₹</div>
+            </div>
+          </div>
+          <div class="result-grid one">
+            <div class="rc">
+              <div class="rc-lbl">Item Cost (excl. GST)</div>
+              <div class="rc-val ac" id="r-price">—</div>
+              <div class="rc-unit">₹ per piece</div>
+            </div>
+          </div>
+          <div class="result-grid">
+            <div class="rc">
+              <div class="rc-lbl">CGST @ 9%</div>
+              <div class="rc-val" id="r-cgst">—</div>
+              <div class="rc-unit">₹</div>
+            </div>
+            <div class="rc">
+              <div class="rc-lbl">SGST @ 9%</div>
+              <div class="rc-val" id="r-sgst">—</div>
+              <div class="rc-unit">₹</div>
+            </div>
+          </div>
+          <div class="result-grid one">
+            <div class="rc">
+              <div class="rc-lbl">Item Cost (incl. GST)</div>
+              <div class="rc-val ac" id="r-price-gst">—</div>
               <div class="rc-unit">₹ per piece</div>
             </div>
           </div>
           <div class="result-grid one">
             <div class="rc">
-              <div class="rc-lbl">Margin (<span id="r-mgn-pct">0</span>%)</div>
-              <div class="rc-val" id="r-mgn">—</div>
-              <div class="rc-unit">₹ added</div>
+              <div class="rc-lbl">+ Shipping Cost</div>
+              <div class="rc-val" id="r-mfg">—</div>
+              <div class="rc-unit">₹ per piece</div>
             </div>
           </div>
           <div class="result-grid one">
             <div class="rc grn">
-              <div class="rc-lbl" style="font-size:10px;letter-spacing:2px">PRICE PER ELEMENT</div>
-              <div class="rc-val gv" id="r-price">—</div>
+              <div class="rc-lbl" style="font-size:10px;letter-spacing:2px">UNIT PRICE (incl. GST + Shipping)</div>
+              <div class="rc-val gv" id="r-unit">—</div>
               <div class="rc-unit">₹ per piece</div>
             </div>
           </div>
@@ -724,11 +750,19 @@ html,body {
     <div class="card">
       <div class="card-hd"><div class="card-dot"></div><span class="card-title">Company Info</span></div>
       <div class="card-body">
-        <div class="field-row one" style="margin-bottom:14px">
+        <div class="field-row one">
           <div class="field">
             <label>Company Name</label>
             <div class="fi">
               <input type="text" id="s-name" placeholder="Your Company Name" style="padding-right:10px"/>
+            </div>
+          </div>
+        </div>
+        <div class="field-row one" style="margin-bottom:14px">
+          <div class="field">
+            <label>GSTIN</label>
+            <div class="fi">
+              <input type="text" id="s-gstin" placeholder="e.g. 27AABCU9603R1ZX" style="padding-right:10px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"/>
             </div>
           </div>
         </div>
@@ -804,7 +838,7 @@ html,body {
           <div class="field">
             <label>Terms &amp; Conditions</label>
             <div class="fi">
-              <textarea id="s-terms" style="padding-right:10px">All prices are subject to applicable GST. Quote valid for 30 days from issue date. Prices subject to change without notice. Subject to material availability.</textarea>
+              <textarea id="s-terms" style="padding-right:10px">All prices are subject to applicable GST. Quote valid for {validity} days from issue date. Prices subject to change without notice. Subject to material availability.</textarea>
             </div>
           </div>
         </div>
@@ -848,11 +882,14 @@ A   = π/4 × OD²            [solid]
 Volume = A × Length         [cm³]
 Weight = Volume × Density   [grams]
 
-C_mat  = (Weight / 1000) × ₹/kg
-C_base = C_mat + Mfg_cost
-Margin = C_base × (Margin% / 100)
-Price  = C_base + Margin
-Total  = Price × Quantity
+C_mat      = (Weight / 1000) × ₹/kg
+Margin     = C_mat × (Margin% / 100)
+Item_cost  = C_mat + Margin     [excl. GST]
+CGST       = Item_cost × 9%
+SGST       = Item_cost × 9%
+Item_GST   = Item_cost + CGST + SGST
+Unit_Price = Item_GST + Shipping_cost
+Total      = Unit_Price × Qty
         </div>
       </div>
     </div>
@@ -931,12 +968,7 @@ let elType   = 'hollow'; // 'hollow' | 'solid'
 let lastCalc = null;
 let toastTmr = null;
 
-// ── Init ──
-(function init() {
-  loadSettingsIntoForm();
-  applyDefaultsToCalc();
-  updateThemeUI();
-})();
+// ── Init called at end of script after all declarations ──
 
 /* ═══════════════════════════════════════════
    NAVIGATION
@@ -1096,35 +1128,42 @@ function calculate() {
   // Weight (grams)
   var wt_g = vol * density;
 
-  // Costs
-  var cMat    = (wt_g / 1000) * priceKg;
-  var cBase   = cMat + mfgCost;
-  var cMargin = cBase * (margin / 100);
-  var price   = cBase + cMargin;
-  var total   = price * qty;
+  // Costs — shipping added last, GST only on item
+  var cMat     = (wt_g / 1000) * priceKg;         // material cost
+  var cMargin  = cMat * (margin / 100);            // margin on material only
+  var itemCost = cMat + cMargin;                   // item price excl. GST
+  var cgst     = itemCost * 0.09;                  // 9% CGST on item
+  var sgst     = itemCost * 0.09;                  // 9% SGST on item
+  var itemGST  = itemCost + cgst + sgst;           // item price incl. GST
+  var unitPrice = itemGST + mfgCost;               // final unit price (item + GST + shipping)
+  var total    = unitPrice * qty;
 
   // Store for PDF / WhatsApp
   lastCalc = {
     od: od, wt: wt, id_mm: id_mm, len: len,
     density: density, priceKg: priceKg,
-    mfgCost: mfgCost, margin: margin, qty: qty,
-    hollow: hollow,
+    mfgCost: mfgCost, margin: margin, qty: qty, hollow: hollow,
+    cgst: cgst, sgst: sgst, itemGST: itemGST, unitPrice: unitPrice,
     vol: vol, wt_g: wt_g,
     cMat: cMat, cMargin: cMargin,
-    price: price, total: total
+    itemCost: itemCost, total: total
   };
 
   // Update result UI
-  document.getElementById('r-vol').textContent    = fmt(vol, 3) + ' cm³';
-  document.getElementById('r-wt').textContent     = fmt(wt_g, 2) + ' g';
-  document.getElementById('r-wtkg').textContent   = fmt(wt_g / 1000, 5) + ' kg';
-  document.getElementById('r-mat').textContent    = '₹ ' + fmtINR(cMat);
-  document.getElementById('r-mfg').textContent    = '₹ ' + fmtINR(mfgCost);
-  document.getElementById('r-mgn-pct').textContent = margin;
-  document.getElementById('r-mgn').textContent    = '₹ ' + fmtINR(cMargin);
-  document.getElementById('r-price').textContent  = '₹ ' + fmtINR(price);
-  document.getElementById('r-total').textContent  = '₹ ' + fmtINR(total);
-  document.getElementById('r-qty-lbl').textContent = qty;
+  document.getElementById('r-vol').textContent      = fmt(vol, 3) + ' cm³';
+  document.getElementById('r-wt').textContent       = fmt(wt_g, 2) + ' g';
+  document.getElementById('r-wtkg').textContent     = fmt(wt_g / 1000, 5) + ' kg';
+  document.getElementById('r-mat').textContent      = '₹ ' + fmtINR(cMat);
+  document.getElementById('r-mgn-pct').textContent  = margin;
+  document.getElementById('r-mgn').textContent      = '₹ ' + fmtINR(cMargin);
+  document.getElementById('r-price').textContent    = '₹ ' + fmtINR(itemCost);
+  document.getElementById('r-cgst').textContent     = '₹ ' + fmtINR(cgst);
+  document.getElementById('r-sgst').textContent     = '₹ ' + fmtINR(sgst);
+  document.getElementById('r-price-gst').textContent = '₹ ' + fmtINR(itemGST);
+  document.getElementById('r-mfg').textContent      = '₹ ' + fmtINR(mfgCost);
+  document.getElementById('r-unit').textContent     = '₹ ' + fmtINR(unitPrice);
+  document.getElementById('r-total').textContent    = '₹ ' + fmtINR(total);
+  document.getElementById('r-qty-lbl').textContent  = qty;
 
   // Show results section
   document.getElementById('results').classList.remove('hidden');
@@ -1173,29 +1212,35 @@ function fmtINR(n) {
 ═══════════════════════════════════════════ */
 var DEFAULTS = {
   company:  'Your Company Name',
+  gstin:    '',
   density:  2.50,
   priceKg:  800,
   mfgCost:  50,
   margin:   25,
   validity: 30,
-  terms:    'All prices are subject to applicable GST. Quote valid for 30 days from issue date. Prices subject to change without notice. Subject to material availability.'
+  terms:    'All prices are subject to applicable GST. Quote valid for {validity} days from issue date. Prices subject to change without notice. Subject to material availability.'
 };
 
 function getSaved() {
+  function num(key, def)  { var v = localStorage.getItem(key); return v !== null ? parseFloat(v) : def; }
+  function int_(key, def) { var v = localStorage.getItem(key); return v !== null ? parseInt(v)   : def; }
   return {
-    company:  localStorage.getItem('sic_company')  || DEFAULTS.company,
-    density:  parseFloat(localStorage.getItem('sic_density'))  || DEFAULTS.density,
-    priceKg:  parseFloat(localStorage.getItem('sic_priceKg'))  || DEFAULTS.priceKg,
-    mfgCost:  parseFloat(localStorage.getItem('sic_mfgCost'))  || DEFAULTS.mfgCost,
-    margin:   parseFloat(localStorage.getItem('sic_margin'))   || DEFAULTS.margin,
-    validity: parseInt(localStorage.getItem('sic_validity'))   || DEFAULTS.validity,
-    terms:    localStorage.getItem('sic_terms')    || DEFAULTS.terms
+    company:  localStorage.getItem('sic_company') || DEFAULTS.company,
+    gstin:    localStorage.getItem('sic_gstin')   || DEFAULTS.gstin,
+    density:  num('sic_density',  DEFAULTS.density),
+    priceKg:  num('sic_priceKg',  DEFAULTS.priceKg),
+    mfgCost:  num('sic_mfgCost',  DEFAULTS.mfgCost),
+    margin:   num('sic_margin',   DEFAULTS.margin),
+    validity: int_('sic_validity', DEFAULTS.validity),
+    terms:    localStorage.getItem('sic_terms')   || DEFAULTS.terms
   };
 }
 
 function loadSettingsIntoForm() {
   var s = getSaved();
   document.getElementById('s-name').value     = s.company;
+  var gEl = document.getElementById('s-gstin');
+  if (gEl) gEl.value = s.gstin;
   document.getElementById('s-density').value  = s.density;
   document.getElementById('s-priceKg').value  = s.priceKg;
   document.getElementById('s-mfgCost').value  = s.mfgCost;
@@ -1215,7 +1260,9 @@ function applyDefaultsToCalc() {
 }
 
 function saveSettings() {
-  localStorage.setItem('sic_company',  document.getElementById('s-name').value.trim()     || DEFAULTS.company);
+  localStorage.setItem('sic_company',  document.getElementById('s-name').value.trim() || DEFAULTS.company);
+  var gEl = document.getElementById('s-gstin');
+  if (gEl) localStorage.setItem('sic_gstin', gEl.value.trim());
   localStorage.setItem('sic_density',  document.getElementById('s-density').value);
   localStorage.setItem('sic_priceKg',  document.getElementById('s-priceKg').value);
   localStorage.setItem('sic_mfgCost',  document.getElementById('s-mfgCost').value);
@@ -1295,10 +1342,11 @@ function generatePDF() {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
-  doc.text(s.company, txtX, 14);
+  doc.text(s.company, txtX, 12);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text('SiC Heating Element — Quotation', txtX, 21);
+  if (s.gstin) doc.text('GSTIN: ' + s.gstin, txtX, 19);
+  doc.text('SiC Heating Element — Quotation', txtX, s.gstin ? 25 : 21);
 
   // Quotation number (top-right)
   doc.setFont('helvetica', 'bold');
@@ -1318,7 +1366,30 @@ function generatePDF() {
   doc.text('Quote generated by ' + s.company, 105, 36);
 
   // ── Specifications table ──
-  var y1 = 48;
+  doc.setTextColor(AR, AG, AB);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('ELEMENT SPECIFICATIONS', 14, 48);
+
+  var specBody = [
+    ['Element Type',        c.hollow ? 'Hollow Tube' : 'Solid Rod', '—'],
+    ['Outer Diameter (OD)', c.od.toFixed(1),                         'mm'],
+    ['Wall Thickness',      c.hollow ? c.wt.toFixed(1) : 'N/A',     'mm'],
+    ['Length',              c.len.toFixed(0),                        'mm'],
+  ];
+
+  doc.autoTable({
+    startY: 51,
+    head: [['Parameter', 'Value', 'Unit']],
+    body: specBody,
+    headStyles: { fillColor: [AR, AG, AB], textColor: [255,255,255], fontStyle: 'bold', fontSize: 8.5 },
+    bodyStyles: { fontSize: 8.5, textColor: [30, 30, 30] },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70 }, 2: { cellWidth: 20, halign: 'center' } },
+    margin: { left: 14, right: 14 }
+  });
+
+  var y1 = doc.lastAutoTable.finalY + 9;
 
   // ── Pricing table ──
   doc.setTextColor(AR, AG, AB);
@@ -1326,14 +1397,15 @@ function generatePDF() {
   doc.setFontSize(10);
   doc.text('PRICING BREAKDOWN', 14, y1);
 
-  // Item Cost = material + margin (shipping shown separately; margin not revealed)
-  var itemCost = c.price - c.mfgCost;
-
   var pricingBody = [
-    ['Item Cost (per piece)',    'Rs. ' + fmtINR(itemCost)],
-    ['Shipping Cost (per piece)', 'Rs. ' + fmtINR(c.mfgCost)],
-    ['Quantity',                  c.qty + ' pcs'],
-    ['TOTAL ORDER VALUE',         'Rs. ' + fmtINR(c.total)],
+    ['Item Cost (excl. GST)',          'Rs. ' + fmtINR(c.itemCost)],
+    ['CGST @ 9%',                      'Rs. ' + fmtINR(c.cgst)],
+    ['SGST @ 9%',                      'Rs. ' + fmtINR(c.sgst)],
+    ['Item Cost (incl. GST)',          'Rs. ' + fmtINR(c.itemGST)],
+    ['Shipping Cost',                  'Rs. ' + fmtINR(c.mfgCost)],
+    ['Unit Price (incl. GST + Ship.)', 'Rs. ' + fmtINR(c.unitPrice)],
+    ['Quantity',                       c.qty + ' pcs'],
+    ['TOTAL ORDER VALUE',              'Rs. ' + fmtINR(c.total)],
   ];
 
   doc.autoTable({
@@ -1350,7 +1422,11 @@ function generatePDF() {
       }
       if (data.section !== 'body') return;
       var idx = data.row.index;
-      if (idx === 3) { // Total
+      if (idx === 5) { // Unit Price incl. GST
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [240, 240, 240];
+      }
+      if (idx === 7) { // Total
         data.cell.styles.fontStyle = 'bold';
         data.cell.styles.fillColor = [255, 237, 213];
         data.cell.styles.textColor = [AR, AG, AB];
@@ -1362,7 +1438,8 @@ function generatePDF() {
   var y2 = doc.lastAutoTable.finalY + 9;
 
   // ── Terms box ──
-  var termsLines = doc.splitTextToSize(s.terms, 178);
+  var termsText  = s.terms.replace('{validity}', s.validity);
+  var termsLines = doc.splitTextToSize(termsText, 178);
   var boxH       = 10 + termsLines.length * 4.5;
   doc.setFillColor(248, 248, 248);
   doc.setDrawColor(200, 200, 200);
@@ -1430,10 +1507,12 @@ function shareWhatsApp() {
     'Weight: ' + fmt(c.wt_g, 2) + ' g  (' + fmt(c.wt_g / 1000, 5) + ' kg)',
     '',
     '\ud83d\udcb0 *Pricing*',
-    'Material Cost:  Rs. ' + fmtINR(c.cMat),
-    'Mfg / Handling: Rs. ' + fmtINR(c.mfgCost),
-    'Margin (' + c.margin + '%): Rs. ' + fmtINR(c.cMargin),
-    '*Unit Price: Rs. ' + fmtINR(c.price) + '*',
+    'Item Cost (excl. GST): Rs. ' + fmtINR(c.itemCost),
+    'CGST @ 9%: Rs. ' + fmtINR(c.cgst),
+    'SGST @ 9%: Rs. ' + fmtINR(c.sgst),
+    'Item Cost (incl. GST): Rs. ' + fmtINR(c.itemGST),
+    'Shipping Cost: Rs. ' + fmtINR(c.mfgCost),
+    '*Unit Price: Rs. ' + fmtINR(c.unitPrice) + '*',
     'Quantity: ' + c.qty + ' pcs',
     '*TOTAL: Rs. ' + fmtINR(c.total) + '*',
     '\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015',
@@ -1504,6 +1583,11 @@ if ('serviceWorker' in navigator) {
   link.href = URL.createObjectURL(blob);
   document.head.appendChild(link);
 })();
+
+// ── Init: run last so DEFAULTS and all functions are fully defined ──
+loadSettingsIntoForm();
+applyDefaultsToCalc();
+updateThemeUI();
 </script>
 </body>
 </html>
