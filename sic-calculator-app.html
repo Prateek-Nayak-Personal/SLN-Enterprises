@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="description" content="SiC Heating Element Volume, Weight &amp; Pricing Calculator"/>
+<meta name="theme-color" content="#0a0a0a" id="metaTheme"/>
+<title>SiC Calc</title>
+
+<!-- Prevent theme flash before CSS loads -->
+<script>
+  (function(){
+    var t = localStorage.getItem('sic_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('metaTheme').content = t === 'dark' ? '#0a0a0a' : '#eef0f4';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════
+   CSS VARIABLES — THEMES
+═══════════════════════════════════════════ */
+:root {
+  --bg:       #0a0a0a;
+  --bg2:      #111111;
+  --bg3:      #1a1a1a;
+  --border:   #252525;
+  --border2:  #333333;
+  --accent:   #ff6b1a;
+  --accent2:  #ff8c42;
+  --text:     #e8e4dc;
+  --text2:    #a09a90;
+  --text3:    #6a6460;
+  --green:    #4cff91;
+  --blue:     #4ca8ff;
+  --red:      #ff4c6a;
+  --card:     #0d0d0d;
+  --input:    #0d0d0d;
+  --nav:      #0e0e0e;
+  --shadow:   rgba(0,0,0,0.6);
+}
+[data-theme="light"] {
+  --bg:       #eef0f4;
+  --bg2:      #ffffff;
+  --bg3:      #f4f6f9;
+  --border:   #dde1e8;
+  --border2:  #c8cdd6;
+  --accent:   #e65100;
+  --accent2:  #f4511e;
+  --text:     #1a1a1e;
+  --text2:    #50555f;
+  --text3:    #888fa0;
+  --green:    #1b6b3a;
+  --blue:     #1565c0;
+  --red:      #c62828;
+  --card:     #ffffff;
+  --input:    #f9fafb;
+  --nav:      #ffffff;
+  --shadow:   rgba(0,0,0,0.14);
+}
+
+/* ═══════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════ */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html,body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════ */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--bg2);
+  border-bottom: 2px solid var(--accent);
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.logo-hex {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #000; flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
+.header-txt { flex: 1; min-width: 0; }
+.header-txt h1 {
+  font-size: 16px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--accent); line-height: 1;
+}
+.header-txt p {
+  font-size: 10px; color: var(--text3); letter-spacing: 1px;
+  text-transform: uppercase; margin-top: 1px;
+}
+.theme-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; cursor: pointer; flex-shrink: 0;
+  transition: border-color .2s;
+}
+.theme-btn:active { border-color: var(--accent); }
+
+/* ── Scrollable content ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 13px 82px;
+  overscroll-behavior: none;
+}
+
+/* ── Bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: var(--nav);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+}
+.nav-item {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 9px 4px 7px;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; gap: 3px;
+  border-top: 2px solid transparent;
+  transition: color .2s, border-color .2s;
+  user-select: none;
+}
+.nav-item .ni { font-size: 19px; line-height: 1; }
+.nav-item.active { color: var(--accent); border-top-color: var(--accent); }
+
+/* ═══════════════════════════════════════════
+   PAGES
+═══════════════════════════════════════════ */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ═══════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════ */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 13px;
+  overflow: hidden;
+}
+.card-hd {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 13px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.card-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent2); }
+.card-body { padding: 13px; }
+
+/* ═══════════════════════════════════════════
+   TYPE TOGGLE
+═══════════════════════════════════════════ */
+.type-toggle {
+  display: flex;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 3px; gap: 3px;
+  margin-bottom: 14px;
+}
+.type-btn {
+  flex: 1; padding: 9px 8px;
+  text-align: center;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--text3);
+  border: none; background: transparent;
+  font-family: 'Rajdhani', sans-serif;
+  transition: all .18s;
+  user-select: none;
+}
+.type-btn.active { background: var(--accent); color: #000; }
+
+/* ═══════════════════════════════════════════
+   SVG DIAGRAM
+═══════════════════════════════════════════ */
+.diagram-wrap {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 12px 13px;
+  margin-bottom: 13px;
+}
+.diagram-lbl {
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text3); text-align: center; margin-top: 4px;
+}
+#diag-outer { stroke: var(--accent); fill: none; }
+#diag-inner { stroke: var(--blue); fill: none; }
+#diag-fill  { fill: none; } /* filled via JS for solid */
+#diag-od-line, #diag-od-arr1, #diag-od-arr2 { stroke: var(--accent); }
+#diag-id-line, #diag-id-arr1, #diag-id-arr2 { stroke: var(--blue); }
+#diag-od-lbl { fill: var(--accent); }
+#diag-id-lbl { fill: var(--blue); }
+.diag-info { flex: 1; }
+.diag-info-lbl { font-size: 9px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px; }
+.diag-row {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: 12px; color: var(--text2); margin-bottom: 4px;
+}
+.diag-row .dv { font-family: 'Share Tech Mono', monospace; font-size: 14px; }
+.diag-row .dv.ac { color: var(--accent); }
+.diag-row .dv.bl { color: var(--blue); }
+.diag-row .dv.tx { color: var(--text); }
+
+/* ═══════════════════════════════════════════
+   FORM FIELDS
+═══════════════════════════════════════════ */
+.field-row { display: grid; gap: 10px; margin-bottom: 11px; }
+.field-row.two   { grid-template-columns: 1fr 1fr; }
+.field-row.one   { grid-template-columns: 1fr; }
+.field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text3);
+}
+.fi { position: relative; }
+.fi input, .fi select, .fi textarea {
+  width: 100%;
+  background: var(--input);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 10px 36px 10px 10px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 15px; color: var(--text);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  -webkit-appearance: none; appearance: none;
+}
+.fi input:focus, .fi select:focus, .fi textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255,107,26,.15);
+}
+.fi input::placeholder { color: var(--text3); font-size: 13px; }
+.fu {
+  position: absolute; right: 9px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px; color: var(--text3); font-weight: 600;
+  pointer-events: none; font-family: 'Rajdhani', sans-serif;
+}
+.fi select  { padding: 10px 28px 10px 10px; font-family: 'Rajdhani', sans-serif; font-size: 14px; }
+.fi textarea { padding: 10px; resize: vertical; min-height: 80px; font-size: 13px; line-height: 1.5; }
+
+/* ID computed display */
+.id-computed {
+  background: var(--bg3);
+  border: 1px dashed var(--border2);
+  border-radius: 5px;
+  padding: 9px 10px;
+  height: 42px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.id-computed .ic-lbl { font-size: 9px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+.id-computed .ic-val { font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--blue); }
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════ */
+.btn-primary {
+  width: 100%;
+  background: var(--accent); color: #000;
+  border: none; border-radius: 7px;
+  padding: 15px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer; transition: opacity .15s, transform .12s;
+  margin-bottom: 8px;
+}
+.btn-primary:active { opacity: .85; transform: scale(.99); }
+
+.btn-ghost {
+  width: 100%;
+  background: transparent; color: var(--text3);
+  border: 1px solid var(--border2); border-radius: 7px;
+  padding: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer; transition: border-color .2s, color .2s;
+  margin-bottom: 6px;
+}
+.btn-ghost:active { border-color: var(--accent); color: var(--accent); }
+
+.action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.btn-action {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 5px; padding: 14px 8px;
+  border-radius: 7px; cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; border: 1px solid;
+  transition: opacity .15s, transform .12s;
+  user-select: none;
+}
+.btn-action:active { opacity: .8; transform: scale(.97); }
+.btn-action .bai { font-size: 22px; }
+.btn-pdf {
+  background: rgba(76,127,255,.08); color: #4c7fff;
+  border-color: rgba(76,127,255,.3);
+}
+.btn-wa {
+  background: rgba(37,211,102,.08); color: #25d366;
+  border-color: rgba(37,211,102,.3);
+}
+[data-theme="light"] .btn-pdf { background: #e8eeff; color: #1565c0; border-color: #1565c0; }
+[data-theme="light"] .btn-wa  { background: #e8f5e9; color: #1b5e20; border-color: #1b5e20; }
+
+/* ═══════════════════════════════════════════
+   RESULTS
+═══════════════════════════════════════════ */
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.result-grid.one { grid-template-columns: 1fr; }
+
+.rc {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 6px; padding: 12px;
+}
+.rc.hl  { border-color: var(--accent); background: rgba(255,107,26,.05); }
+.rc.grn {
+  border-color: var(--green);
+  background: rgba(76,255,145,.05);
+  text-align: center; padding: 18px;
+}
+[data-theme="light"] .rc.grn { background: rgba(27,107,58,.05); }
+[data-theme="light"] .rc.hl  { background: rgba(230,81,0,.05); }
+
+.rc-lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+.rc-val { font-family: 'Share Tech Mono', monospace; font-size: 17px; color: var(--text); line-height: 1.2; }
+.rc-val.ac { color: var(--accent); }
+.rc-val.gv { color: var(--green); font-size: 24px; }
+.rc-unit { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ═══════════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════════ */
+.divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 0;
+}
+.divider::before,.divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.divider span { font-size: 10px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════
+   INFO ROWS (theory / rates)
+═══════════════════════════════════════════ */
+.ir {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ir:last-child { border-bottom: none; }
+.ir .ik { color: var(--text2); }
+.ir .iv { font-family: 'Share Tech Mono', monospace; color: var(--accent2); font-size: 12px; }
+
+/* Formula box */
+.formula {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 5px 5px 0;
+  padding: 12px; margin: 10px 0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; color: var(--accent2); line-height: 1.9;
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS — LOGO UPLOAD
+═══════════════════════════════════════════ */
+.logo-preview {
+  width: 78px; height: 60px;
+  border: 2px dashed var(--border2);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; cursor: pointer;
+  background: var(--card); flex-shrink: 0;
+  transition: border-color .2s;
+}
+.logo-preview:active { border-color: var(--accent); }
+.logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+.logo-ph { font-size: 10px; color: var(--text3); text-align: center; padding: 6px; line-height: 1.4; }
+.logo-remove {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--red);
+  border-radius: 4px; padding: 4px 10px;
+  font-size: 11px; cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* Section desc */
+.sdesc { font-size: 13px; color: var(--text2); line-height: 1.55; margin-bottom: 12px; }
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 76px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  padding: 10px 22px; border-radius: 24px;
+  font-weight: 700; letter-spacing: 1px; font-size: 13px;
+  transition: transform .25s, opacity .25s;
+  z-index: 999; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  background: var(--accent); color: #000;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   MISC
+═══════════════════════════════════════════ */
+.hidden { display: none !important; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header class="header">
+  <div class="logo-hex">SiC</div>
+  <div class="header-txt">
+    <h1>SiC Calc</h1>
+    <p>Heating Element Pricing</p>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
+</header>
+
+<!-- ═══════════════ CONTENT ═══════════════ -->
+<div class="content" id="contentArea">
+
+  <!-- ══════════════════════════════════════
+       CALCULATOR PAGE
+  ══════════════════════════════════════ -->
+  <div class="page active" id="page-calc">
+
+    <!-- Type toggle -->
+    <div class="type-toggle">
+      <button class="type-btn active" id="btnHollow" onclick="setType('hollow')">⬡ Hollow Tube</button>
+      <button class="type-btn"        id="btnSolid"  onclick="setType('solid')">● Solid Rod</button>
+    </div>
+
+    <!-- Cross-section diagram -->
+    <div class="diagram-wrap">
+      <div>
+        <svg id="diag-svg" width="110" height="110" viewBox="0 0 110 110">
+          <!-- Solid fill for solid-rod mode -->
+          <circle id="diag-fill" cx="55" cy="55" r="46" fill="rgba(255,107,26,0.13)" style="display:none"/>
+          <!-- Outer circle -->
+          <circle id="diag-outer" cx="55" cy="55" r="46" stroke-width="2.5"/>
+          <!-- Inner hole (hollow) -->
+          <circle id="diag-inner" cx="55" cy="55" r="26" stroke-width="1.8" stroke-dasharray="6,4"/>
+          <!-- OD dimension line -->
+          <line id="diag-od-line" x1="55" y1="55" x2="101" y2="55" stroke-width="1" opacity="0.7"/>
+          <text id="diag-od-lbl" x="108" y="58" font-size="8" font-family="monospace" text-anchor="middle">OD</text>
+          <!-- ID dimension line -->
+          <line id="diag-id-line" x1="55" y1="55" x2="55" y2="29" stroke-width="1" opacity="0.7"/>
+          <text id="diag-id-lbl" x="55" y="23" font-size="8" font-family="monospace" text-anchor="middle">ID</text>
+        </svg>
+        <div class="diagram-lbl">Cross-section</div>
+      </div>
+      <div class="diag-info">
+        <div class="diag-info-lbl">Live Specs</div>
+        <div class="diag-row">OD<span class="dv ac" id="dv-od">—</span><span style="font-size:10px;color:var(--text3)">mm</span></div>
+        <div class="diag-row" id="dv-id-row">ID<span class="dv bl" id="dv-id">—</span><span style="font-size:10px;color:var(--text3)">mm</span></div>
+        <div class="diag-row">L&nbsp;<span class="dv tx" id="dv-len">—</span><span style="font-size:10px;color:var(--text3)">mm</span></div>
+        <div class="diag-row" id="dv-vol-row" style="display:none">V<span class="dv ac" id="dv-vol">—</span><span style="font-size:10px;color:var(--text3)">cm³</span></div>
+      </div>
+    </div>
+
+    <!-- Dimensions card -->
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Dimensions</span></div>
+      <div class="card-body">
+
+        <!-- Row: OD + WT -->
+        <div class="field-row two" id="row-od-wt">
+          <div class="field">
+            <label>Outer Dia (OD)</label>
+            <div class="fi">
+              <input type="number" id="od" placeholder="e.g. 25" min="1" step="0.5" inputmode="decimal" oninput="onDimChange()"/>
+              <span class="fu">mm</span>
+            </div>
+          </div>
+          <div class="field" id="wt-col">
+            <label>Wall Thickness</label>
+            <div class="fi">
+              <input type="number" id="wt" placeholder="e.g. 6" min="0.5" step="0.5" inputmode="decimal" oninput="onDimChange()"/>
+              <span class="fu">mm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ID computed (hollow only) -->
+        <div class="field-row two" id="row-id-len">
+          <div class="field">
+            <label>Inner Dia (ID)</label>
+            <div class="id-computed">
+              <div class="ic-lbl">Auto-computed</div>
+              <div class="ic-val" id="id-display">—</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Length</label>
+            <div class="fi">
+              <input type="number" id="len" placeholder="e.g. 300" min="1" step="1" inputmode="decimal" oninput="onDimChange()"/>
+              <span class="fu">mm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Length (solid-only row, hidden for hollow) -->
+        <div class="field-row one hidden" id="row-len-solid">
+          <div class="field">
+            <label>Length</label>
+            <div class="fi">
+              <input type="number" id="len-solid" placeholder="e.g. 300" min="1" step="1" inputmode="decimal" oninput="onDimChange()"/>
+              <span class="fu">mm</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Material & Costing card -->
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Material &amp; Costing</span></div>
+      <div class="card-body">
+        <div class="field-row two">
+          <div class="field">
+            <label>Density</label>
+            <div class="fi">
+              <input type="number" id="density" value="2.50" min="1" max="4" step="0.01" inputmode="decimal"/>
+              <span class="fu">g/cm³</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Price / kg</label>
+            <div class="fi">
+              <input type="number" id="priceKg" value="800" min="0" step="10" inputmode="decimal"/>
+              <span class="fu">₹</span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row two">
+          <div class="field">
+            <label>Shipping Cost</label>
+            <div class="fi">
+              <input type="number" id="mfgCost" value="50" min="0" step="5" inputmode="decimal"/>
+              <span class="fu">₹</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Margin %</label>
+            <div class="fi">
+              <input type="number" id="margin" value="25" min="0" max="500" step="1" inputmode="decimal"/>
+              <span class="fu">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row one">
+          <div class="field">
+            <label>Quantity</label>
+            <div class="fi">
+              <input type="number" id="qty" value="1" min="1" step="1" inputmode="numeric"/>
+              <span class="fu">pcs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="calculate()">⚡ CALCULATE PRICE</button>
+    <button class="btn-ghost"   onclick="resetCalc()">↺ RESET ALL</button>
+
+    <!-- ── RESULTS (hidden until calculated) ── -->
+    <div id="results" class="hidden">
+      <div class="divider"><span>▶ Results</span></div>
+
+      <!-- Volume & Weight -->
+      <div class="card">
+        <div class="card-hd"><div class="card-dot"></div><span class="card-title">Volume &amp; Weight</span></div>
+        <div class="card-body">
+          <div class="result-grid">
+            <div class="rc">
+              <div class="rc-lbl">Volume</div>
+              <div class="rc-val ac" id="r-vol">—</div>
+              <div class="rc-unit">cm³ per piece</div>
+            </div>
+            <div class="rc">
+              <div class="rc-lbl">Weight</div>
+              <div class="rc-val" id="r-wt">—</div>
+              <div class="rc-unit">grams per piece</div>
+            </div>
+          </div>
+          <div class="result-grid one">
+            <div class="rc hl">
+              <div class="rc-lbl">Weight (kg)</div>
+              <div class="rc-val ac" id="r-wtkg">—</div>
+              <div class="rc-unit">kg per piece</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Price Breakdown -->
+      <div class="card">
+        <div class="card-hd"><div class="card-dot"></div><span class="card-title">Price Breakdown</span></div>
+        <div class="card-body">
+          <div class="result-grid">
+            <div class="rc">
+              <div class="rc-lbl">Material Cost</div>
+              <div class="rc-val ac" id="r-mat">—</div>
+              <div class="rc-unit">₹</div>
+            </div>
+            <div class="rc">
+              <div class="rc-lbl">Mfg Cost</div>
+              <div class="rc-val" id="r-mfg">—</div>
+              <div class="rc-unit">₹ per piece</div>
+            </div>
+          </div>
+          <div class="result-grid one">
+            <div class="rc">
+              <div class="rc-lbl">Margin (<span id="r-mgn-pct">0</span>%)</div>
+              <div class="rc-val" id="r-mgn">—</div>
+              <div class="rc-unit">₹ added</div>
+            </div>
+          </div>
+          <div class="result-grid one">
+            <div class="rc grn">
+              <div class="rc-lbl" style="font-size:10px;letter-spacing:2px">PRICE PER ELEMENT</div>
+              <div class="rc-val gv" id="r-price">—</div>
+              <div class="rc-unit">₹ per piece</div>
+            </div>
+          </div>
+          <div class="result-grid one">
+            <div class="rc" style="border-color:var(--green);background:rgba(76,255,145,.04)">
+              <div class="rc-lbl">Total for <span id="r-qty-lbl">1</span> piece(s)</div>
+              <div class="rc-val gv" id="r-total" style="font-size:21px">—</div>
+              <div class="rc-unit">₹ total order value</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="action-row">
+        <button class="btn-action btn-pdf" onclick="generatePDF()">
+          <span class="bai">📄</span>
+          <span>PDF Quote</span>
+        </button>
+        <button class="btn-action btn-wa" onclick="shareWhatsApp()">
+          <span class="bai">💬</span>
+          <span>WhatsApp</span>
+        </button>
+      </div>
+    </div><!-- /results -->
+
+  </div><!-- /page-calc -->
+
+  <!-- ══════════════════════════════════════
+       SETTINGS PAGE
+  ══════════════════════════════════════ -->
+  <div class="page" id="page-settings">
+
+    <!-- Company Info -->
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Company Info</span></div>
+      <div class="card-body">
+        <div class="field-row one" style="margin-bottom:14px">
+          <div class="field">
+            <label>Company Name</label>
+            <div class="fi">
+              <input type="text" id="s-name" placeholder="Your Company Name" style="padding-right:10px"/>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div>
+            <div class="logo-preview" id="logoPreview" onclick="document.getElementById('logoInput').click()">
+              <span class="logo-ph">Tap to<br/>add logo</span>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:600">Company Logo</div>
+            <div style="font-size:11px;color:var(--text3);line-height:1.55">Shown in PDF quotation header.<br/>PNG or JPG recommended.</div>
+            <button class="logo-remove" onclick="clearLogo()">✕ Remove</button>
+          </div>
+        </div>
+        <input type="file" id="logoInput" accept="image/*" style="display:none" onchange="handleLogo(event)"/>
+      </div>
+    </div>
+
+    <!-- Defaults -->
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Default Values</span></div>
+      <div class="card-body">
+        <div class="field-row two">
+          <div class="field">
+            <label>Density</label>
+            <div class="fi">
+              <input type="number" id="s-density" value="2.50" min="1" max="4" step="0.01" inputmode="decimal"/>
+              <span class="fu">g/cm³</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Price / kg</label>
+            <div class="fi">
+              <input type="number" id="s-priceKg" value="800" min="0" step="10" inputmode="decimal"/>
+              <span class="fu">₹</span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row two">
+          <div class="field">
+            <label>Shipping Cost</label>
+            <div class="fi">
+              <input type="number" id="s-mfgCost" value="50" min="0" step="5" inputmode="decimal"/>
+              <span class="fu">₹</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Margin %</label>
+            <div class="fi">
+              <input type="number" id="s-margin" value="25" min="0" max="500" step="1" inputmode="decimal"/>
+              <span class="fu">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quotation Settings -->
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Quotation Settings</span></div>
+      <div class="card-body">
+        <div class="field-row one">
+          <div class="field">
+            <label>Quote Validity</label>
+            <div class="fi">
+              <input type="number" id="s-validity" value="30" min="1" step="1" inputmode="numeric"/>
+              <span class="fu">days</span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row one">
+          <div class="field">
+            <label>Terms &amp; Conditions</label>
+            <div class="fi">
+              <textarea id="s-terms" style="padding-right:10px">All prices are subject to applicable GST. Quote valid for 30 days from issue date. Prices subject to change without notice. Subject to material availability.</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Appearance -->
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Appearance</span></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">App Theme</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">Currently: <span id="theme-lbl">Dark</span></div>
+          </div>
+          <button onclick="toggleTheme()" style="background:var(--accent);color:#000;border:none;border-radius:20px;padding:9px 20px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer">Toggle</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveSettings()">💾 SAVE SETTINGS</button>
+    <button class="btn-ghost"   onclick="resetSettings()">↺ RESET TO DEFAULTS</button>
+
+  </div><!-- /page-settings -->
+
+  <!-- ══════════════════════════════════════
+       THEORY PAGE
+  ══════════════════════════════════════ -->
+  <div class="page" id="page-theory">
+
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Calculation Formulas</span></div>
+      <div class="card-body">
+        <p class="sdesc">Inputs in <strong style="color:var(--accent)">mm</strong>, converted to cm internally. Output in cm³ / grams.</p>
+        <div class="formula">
+ID  = OD − (2 × Wall Thickness)
+
+A   = π/4 × (OD² − ID²)   [hollow]
+A   = π/4 × OD²            [solid]
+
+Volume = A × Length         [cm³]
+Weight = Volume × Density   [grams]
+
+C_mat  = (Weight / 1000) × ₹/kg
+C_base = C_mat + Mfg_cost
+Margin = C_base × (Margin% / 100)
+Price  = C_base + Margin
+Total  = Price × Quantity
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Density Reference</span></div>
+      <div class="card-body">
+        <div class="ir"><span class="ik">Theoretical SiC</span><span class="iv">3.21 g/cm³</span></div>
+        <div class="ir"><span class="ik">Recrystallized (hot zone)</span><span class="iv">2.4–2.7 g/cm³</span></div>
+        <div class="ir"><span class="ik">Si-impregnated (cold ends)</span><span class="iv">2.8–3.1 g/cm³</span></div>
+        <div class="ir"><span class="ik">Porosity (hot zone typical)</span><span class="iv">15–25%</span></div>
+        <div class="ir"><span class="ik">Max operating temperature</span><span class="iv">1600°C</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Cost Benchmarks (India)</span></div>
+      <div class="card-body">
+        <div class="ir"><span class="ik">SiC Powder (standard)</span><span class="iv">₹250–400/kg</span></div>
+        <div class="ir"><span class="ik">SiC Powder (high purity)</span><span class="iv">₹500–1000/kg</span></div>
+        <div class="ir"><span class="ik">Si impregnation premium</span><span class="iv">+30–60%</span></div>
+        <div class="ir"><span class="ik">Finished element (small)</span><span class="iv">₹1,200–3,000</span></div>
+        <div class="ir"><span class="ik">Finished element (large)</span><span class="iv">₹6,500–20,000+</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Typical Margin Ranges</span></div>
+      <div class="card-body">
+        <div class="ir"><span class="ik">OEM / Bulk supply</span><span class="iv">15–20%</span></div>
+        <div class="ir"><span class="ik">Standard distribution</span><span class="iv">25–35%</span></div>
+        <div class="ir"><span class="ik">End-user / retail</span><span class="iv">40–60%</span></div>
+        <div class="ir"><span class="ik">Custom / urgent</span><span class="iv">50–80%</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><div class="card-dot"></div><span class="card-title">Install as Android App</span></div>
+      <div class="card-body">
+        <p class="sdesc">This is a Progressive Web App (PWA). Install it from Chrome — no app store needed.</p>
+        <div class="ir"><span class="ik">1. Open in Chrome</span><span class="iv">Required</span></div>
+        <div class="ir"><span class="ik">2. Tap ⋮ (3-dot menu)</span><span class="iv">Top right</span></div>
+        <div class="ir"><span class="ik">3. "Add to Home Screen"</span><span class="iv">Tap &amp; confirm</span></div>
+        <div class="ir"><span class="ik">4. Launches fullscreen</span><span class="iv">Works offline ✓</span></div>
+      </div>
+    </div>
+
+  </div><!-- /page-theory -->
+
+</div><!-- /content -->
+
+<!-- ═══════════════ BOTTOM NAV ═══════════════ -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-calc"     onclick="switchTab('calc')">
+    <span class="ni">⚡</span><span>Calc</span>
+  </div>
+  <div class="nav-item"        id="nav-settings" onclick="switchTab('settings')">
+    <span class="ni">⚙</span><span>Settings</span>
+  </div>
+  <div class="nav-item"        id="nav-theory"   onclick="switchTab('theory')">
+    <span class="ni">📐</span><span>Theory</span>
+  </div>
+</nav>
+
+</div><!-- /app -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── State ──
+let elType   = 'hollow'; // 'hollow' | 'solid'
+let lastCalc = null;
+let toastTmr = null;
+
+// ── Init ──
+(function init() {
+  loadSettingsIntoForm();
+  applyDefaultsToCalc();
+  updateThemeUI();
+})();
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+function switchTab(id) {
+  ['calc','settings','theory'].forEach(function(t) {
+    document.getElementById('page-' + t).classList.toggle('active', t === id);
+    document.getElementById('nav-'  + t).classList.toggle('active', t === id);
+  });
+  document.getElementById('contentArea').scrollTop = 0;
+}
+
+/* ═══════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════ */
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+}
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('metaTheme').content = t === 'dark' ? '#0a0a0a' : '#eef0f4';
+  localStorage.setItem('sic_theme', t);
+  updateThemeUI();
+}
+function updateThemeUI() {
+  var t   = document.documentElement.getAttribute('data-theme');
+  var btn = document.querySelector('.theme-btn');
+  if (btn) btn.textContent = t === 'dark' ? '☀' : '🌙';
+  var lbl = document.getElementById('theme-lbl');
+  if (lbl) lbl.textContent = t === 'dark' ? 'Dark' : 'Light';
+}
+
+/* ═══════════════════════════════════════════
+   ELEMENT TYPE
+═══════════════════════════════════════════ */
+function setType(type) {
+  elType = type;
+  var hollow = type === 'hollow';
+
+  document.getElementById('btnHollow').classList.toggle('active', hollow);
+  document.getElementById('btnSolid').classList.toggle('active', !hollow);
+
+  // Show/hide fields
+  document.getElementById('wt-col').classList.toggle('hidden', !hollow);
+  document.getElementById('row-id-len').classList.toggle('hidden', !hollow);
+  document.getElementById('row-len-solid').classList.toggle('hidden', hollow);
+
+  // Diagram
+  document.getElementById('diag-inner').style.display   = hollow ? '' : 'none';
+  document.getElementById('diag-id-line').style.display = hollow ? '' : 'none';
+  document.getElementById('diag-id-lbl').style.display  = hollow ? '' : 'none';
+  document.getElementById('diag-fill').style.display    = hollow ? 'none' : '';
+  document.getElementById('dv-id-row').style.display    = hollow ? '' : 'none';
+
+  onDimChange();
+}
+
+/* ═══════════════════════════════════════════
+   LIVE DIMENSION UPDATES
+═══════════════════════════════════════════ */
+function getLen() {
+  return elType === 'hollow'
+    ? parseFloat(document.getElementById('len').value)      || 0
+    : parseFloat(document.getElementById('len-solid').value) || 0;
+}
+
+function onDimChange() {
+  var od  = parseFloat(document.getElementById('od').value) || 0;
+  var wt  = parseFloat(document.getElementById('wt').value) || 0;
+  var len = getLen();
+
+  // ID
+  var id_mm = (elType === 'hollow' && od > 0 && wt > 0) ? (od - 2 * wt) : 0;
+
+  // ID display
+  if (elType === 'hollow') {
+    document.getElementById('id-display').textContent =
+      (od > 0 && wt > 0 && id_mm > 0) ? id_mm.toFixed(1) + ' mm' : '—';
+  }
+
+  // Diagram info panel
+  document.getElementById('dv-od').textContent  = od  ? od + '' : '—';
+  document.getElementById('dv-id').textContent  = (elType === 'hollow' && id_mm > 0) ? id_mm.toFixed(1) : '—';
+  document.getElementById('dv-len').textContent = len ? len + '' : '—';
+
+  // Live volume in diagram (if all values present)
+  var showVol = false;
+  if (od > 0 && len > 0) {
+    var density = parseFloat(document.getElementById('density').value) || 0;
+    if (density > 0) {
+      var OD = od / 10, ID = id_mm / 10, L = len / 10;
+      var A  = (elType === 'hollow' && id_mm > 0)
+        ? Math.PI / 4 * (OD * OD - ID * ID)
+        : Math.PI / 4 * OD * OD;
+      var vol = A * L;
+      if (vol > 0) {
+        document.getElementById('dv-vol').textContent = fmt(vol, 2);
+        showVol = true;
+      }
+    }
+  }
+  document.getElementById('dv-vol-row').style.display = showVol ? '' : 'none';
+
+  // Update SVG inner-circle radius proportionally
+  if (elType === 'hollow' && od > 0 && id_mm > 0) {
+    var outerR = 46;
+    var innerR = Math.max(3, outerR * (id_mm / od));
+    document.getElementById('diag-inner').setAttribute('r', innerR.toFixed(1));
+    // ID line endpoint
+    var idEndY = 55 - innerR;
+    document.getElementById('diag-id-line').setAttribute('y2', idEndY.toFixed(1));
+    document.getElementById('diag-id-lbl').setAttribute('y', (idEndY - 4).toFixed(1));
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CALCULATE
+═══════════════════════════════════════════ */
+function calculate() {
+  var od      = parseFloat(document.getElementById('od').value);
+  var wt      = parseFloat(document.getElementById('wt').value);
+  var len     = getLen();
+  var density = parseFloat(document.getElementById('density').value);
+  var priceKg = parseFloat(document.getElementById('priceKg').value);
+  var mfgCost = parseFloat(document.getElementById('mfgCost').value) || 0;
+  var margin  = parseFloat(document.getElementById('margin').value)  || 0;
+  var qty     = Math.max(1, parseInt(document.getElementById('qty').value) || 1);
+  var hollow  = (elType === 'hollow');
+
+  // Validation
+  if (!od || od <= 0)        { toast('⚠ Enter Outer Diameter'); return; }
+  if (!len || len <= 0)      { toast('⚠ Enter Length'); return; }
+  if (!density || density<=0){ toast('⚠ Enter valid Density'); return; }
+  if (priceKg < 0)           { toast('⚠ Enter Price per kg'); return; }
+
+  var id_mm = 0;
+  if (hollow) {
+    if (!wt || wt <= 0) { toast('⚠ Enter Wall Thickness'); return; }
+    id_mm = od - 2 * wt;
+    if (id_mm <= 0) { toast('⚠ Wall thickness too large for OD'); return; }
+  }
+
+  // Convert mm → cm
+  var OD = od  / 10;
+  var ID = id_mm / 10;
+  var L  = len / 10;
+
+  // Cross-section area (cm²)
+  var A = hollow
+    ? Math.PI / 4 * (OD * OD - ID * ID)
+    : Math.PI / 4 * OD * OD;
+
+  // Volume (cm³)
+  var vol = A * L;
+
+  // Weight (grams)
+  var wt_g = vol * density;
+
+  // Costs
+  var cMat    = (wt_g / 1000) * priceKg;
+  var cBase   = cMat + mfgCost;
+  var cMargin = cBase * (margin / 100);
+  var price   = cBase + cMargin;
+  var total   = price * qty;
+
+  // Store for PDF / WhatsApp
+  lastCalc = {
+    od: od, wt: wt, id_mm: id_mm, len: len,
+    density: density, priceKg: priceKg,
+    mfgCost: mfgCost, margin: margin, qty: qty,
+    hollow: hollow,
+    vol: vol, wt_g: wt_g,
+    cMat: cMat, cMargin: cMargin,
+    price: price, total: total
+  };
+
+  // Update result UI
+  document.getElementById('r-vol').textContent    = fmt(vol, 3) + ' cm³';
+  document.getElementById('r-wt').textContent     = fmt(wt_g, 2) + ' g';
+  document.getElementById('r-wtkg').textContent   = fmt(wt_g / 1000, 5) + ' kg';
+  document.getElementById('r-mat').textContent    = '₹ ' + fmtINR(cMat);
+  document.getElementById('r-mfg').textContent    = '₹ ' + fmtINR(mfgCost);
+  document.getElementById('r-mgn-pct').textContent = margin;
+  document.getElementById('r-mgn').textContent    = '₹ ' + fmtINR(cMargin);
+  document.getElementById('r-price').textContent  = '₹ ' + fmtINR(price);
+  document.getElementById('r-total').textContent  = '₹ ' + fmtINR(total);
+  document.getElementById('r-qty-lbl').textContent = qty;
+
+  // Show results section
+  document.getElementById('results').classList.remove('hidden');
+  toast('✓ Calculated successfully');
+
+  setTimeout(function() {
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
+}
+
+function resetCalc() {
+  ['od','wt','len','len-solid'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('id-display').textContent = '—';
+  document.getElementById('qty').value = '1';
+  ['dv-od','dv-id','dv-len'].forEach(function(id) {
+    document.getElementById(id).textContent = '—';
+  });
+  document.getElementById('dv-vol-row').style.display = 'none';
+  document.getElementById('results').classList.add('hidden');
+  lastCalc = null;
+  toast('↺ Reset', '#4ca8ff');
+}
+
+/* ═══════════════════════════════════════════
+   NUMBER FORMATTING
+═══════════════════════════════════════════ */
+function fmt(n, d) {
+  d = d || 2;
+  if (isNaN(n) || n === null) return '0';
+  return parseFloat(n.toFixed(d)).toString();
+}
+function fmtINR(n) {
+  if (isNaN(n)) return '0.00';
+  // Indian number format
+  return parseFloat(n.toFixed(2)).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════ */
+var DEFAULTS = {
+  company:  'Your Company Name',
+  density:  2.50,
+  priceKg:  800,
+  mfgCost:  50,
+  margin:   25,
+  validity: 30,
+  terms:    'All prices are subject to applicable GST. Quote valid for 30 days from issue date. Prices subject to change without notice. Subject to material availability.'
+};
+
+function getSaved() {
+  return {
+    company:  localStorage.getItem('sic_company')  || DEFAULTS.company,
+    density:  parseFloat(localStorage.getItem('sic_density'))  || DEFAULTS.density,
+    priceKg:  parseFloat(localStorage.getItem('sic_priceKg'))  || DEFAULTS.priceKg,
+    mfgCost:  parseFloat(localStorage.getItem('sic_mfgCost'))  || DEFAULTS.mfgCost,
+    margin:   parseFloat(localStorage.getItem('sic_margin'))   || DEFAULTS.margin,
+    validity: parseInt(localStorage.getItem('sic_validity'))   || DEFAULTS.validity,
+    terms:    localStorage.getItem('sic_terms')    || DEFAULTS.terms
+  };
+}
+
+function loadSettingsIntoForm() {
+  var s = getSaved();
+  document.getElementById('s-name').value     = s.company;
+  document.getElementById('s-density').value  = s.density;
+  document.getElementById('s-priceKg').value  = s.priceKg;
+  document.getElementById('s-mfgCost').value  = s.mfgCost;
+  document.getElementById('s-margin').value   = s.margin;
+  document.getElementById('s-validity').value = s.validity;
+  document.getElementById('s-terms').value    = s.terms;
+  var logo = localStorage.getItem('sic_logo');
+  if (logo) setLogoPreview(logo);
+}
+
+function applyDefaultsToCalc() {
+  var s = getSaved();
+  document.getElementById('density').value  = s.density;
+  document.getElementById('priceKg').value  = s.priceKg;
+  document.getElementById('mfgCost').value  = s.mfgCost;
+  document.getElementById('margin').value   = s.margin;
+}
+
+function saveSettings() {
+  localStorage.setItem('sic_company',  document.getElementById('s-name').value.trim()     || DEFAULTS.company);
+  localStorage.setItem('sic_density',  document.getElementById('s-density').value);
+  localStorage.setItem('sic_priceKg',  document.getElementById('s-priceKg').value);
+  localStorage.setItem('sic_mfgCost',  document.getElementById('s-mfgCost').value);
+  localStorage.setItem('sic_margin',   document.getElementById('s-margin').value);
+  localStorage.setItem('sic_validity', document.getElementById('s-validity').value);
+  localStorage.setItem('sic_terms',    document.getElementById('s-terms').value);
+  applyDefaultsToCalc();
+  toast('✓ Settings saved');
+}
+
+function resetSettings() {
+  Object.keys(DEFAULTS).forEach(function(k) { localStorage.removeItem('sic_' + k); });
+  loadSettingsIntoForm();
+  applyDefaultsToCalc();
+  toast('↺ Defaults restored', '#4ca8ff');
+}
+
+/* ═══════════════════════════════════════════
+   LOGO
+═══════════════════════════════════════════ */
+function handleLogo(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var b64 = ev.target.result;
+    localStorage.setItem('sic_logo', b64);
+    setLogoPreview(b64);
+    toast('✓ Logo saved');
+  };
+  reader.readAsDataURL(file);
+}
+function setLogoPreview(src) {
+  document.getElementById('logoPreview').innerHTML = '<img src="' + src + '" alt="Logo"/>';
+}
+function clearLogo() {
+  localStorage.removeItem('sic_logo');
+  document.getElementById('logoPreview').innerHTML = '<span class="logo-ph">Tap to<br/>add logo</span>';
+  toast('Logo removed');
+}
+
+/* ═══════════════════════════════════════════
+   PDF GENERATION
+═══════════════════════════════════════════ */
+function generatePDF() {
+  if (!lastCalc) { toast('⚠ Calculate first'); return; }
+  if (typeof window.jspdf === 'undefined') { toast('⚠ PDF library not loaded — check internet'); return; }
+
+  var jsPDF = window.jspdf.jsPDF;
+  var doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var c     = lastCalc;
+  var s     = getSaved();
+  var logo  = localStorage.getItem('sic_logo');
+  var qNum  = nextQuoteNum();
+
+  var now      = new Date();
+  var dateStr  = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  var validDate = new Date(now.getTime() + s.validity * 86400000)
+    .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  // Accent color (orange, works on light PDF)
+  var AR = 230, AG = 81, AB = 0;
+
+  // ── Header bar ──
+  doc.setFillColor(AR, AG, AB);
+  doc.rect(0, 0, 210, 30, 'F');
+
+  var txtX = 14;
+  if (logo) {
+    try {
+      var fmt_ = logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+      doc.addImage(logo, fmt_, 10, 5, 22, 20);
+      txtX = 36;
+    } catch(e) { /* skip if image fails */ }
+  }
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text(s.company, txtX, 14);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('SiC Heating Element — Quotation', txtX, 21);
+
+  // Quotation number (top-right)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('QUOTATION', 148, 12);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(qNum,           148, 18);
+  doc.text('Date: ' + dateStr, 148, 23);
+
+  // ── Sub-header ──
+  doc.setFillColor(245, 245, 245);
+  doc.rect(0, 30, 210, 9, 'F');
+  doc.setTextColor(100, 100, 100);
+  doc.setFontSize(7.5);
+  doc.text('Valid until: ' + validDate, 14, 36);
+  doc.text('Quote generated by ' + s.company, 105, 36);
+
+  // ── Specifications table ──
+  var y1 = 48;
+
+  // ── Pricing table ──
+  doc.setTextColor(AR, AG, AB);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('PRICING BREAKDOWN', 14, y1);
+
+  // Item Cost = material + margin (shipping shown separately; margin not revealed)
+  var itemCost = c.price - c.mfgCost;
+
+  var pricingBody = [
+    ['Item Cost (per piece)',    'Rs. ' + fmtINR(itemCost)],
+    ['Shipping Cost (per piece)', 'Rs. ' + fmtINR(c.mfgCost)],
+    ['Quantity',                  c.qty + ' pcs'],
+    ['TOTAL ORDER VALUE',         'Rs. ' + fmtINR(c.total)],
+  ];
+
+  doc.autoTable({
+    startY: y1 + 3,
+    head: [['Item', 'Amount']],
+    body: pricingBody,
+    headStyles: { fillColor: [AR, AG, AB], textColor: [255,255,255], fontStyle: 'bold', fontSize: 8.5, halign: 'right' },
+    bodyStyles: { fontSize: 8.5, textColor: [30, 30, 30] },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+    columnStyles: { 0: { cellWidth: 110, halign: 'left' }, 1: { halign: 'right' } },
+    didParseCell: function(data) {
+      if (data.section === 'head') {
+        if (data.column.index === 0) data.cell.styles.halign = 'left';
+      }
+      if (data.section !== 'body') return;
+      var idx = data.row.index;
+      if (idx === 3) { // Total
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [255, 237, 213];
+        data.cell.styles.textColor = [AR, AG, AB];
+      }
+    },
+    margin: { left: 14, right: 14 }
+  });
+
+  var y2 = doc.lastAutoTable.finalY + 9;
+
+  // ── Terms box ──
+  var termsLines = doc.splitTextToSize(s.terms, 178);
+  var boxH       = 10 + termsLines.length * 4.5;
+  doc.setFillColor(248, 248, 248);
+  doc.setDrawColor(200, 200, 200);
+  doc.roundedRect(14, y2, 182, boxH, 2, 2, 'FD');
+  doc.setTextColor(100, 100, 100);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('Terms & Conditions', 18, y2 + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(termsLines, 18, y2 + 11);
+
+  // ── Footer ──
+  doc.setFontSize(7);
+  doc.setTextColor(180, 180, 180);
+  doc.text('Generated by ' + s.company, 14, 290);
+  doc.text(dateStr, 196, 290, { align: 'right' });
+
+  // Save
+  var fname = 'SiC_Quote_' + qNum + '_OD' + c.od + 'x' + c.len + 'mm.pdf';
+  doc.save(fname);
+  toast('✓ PDF saved');
+}
+
+function nextQuoteNum() {
+  var today = new Date();
+  var dd    = String(today.getDate()).padStart(2, '0');
+  var mm    = String(today.getMonth() + 1).padStart(2, '0');
+  var yy    = String(today.getFullYear()).slice(-2);
+  var dateKey = dd + mm + yy;
+  // Reset serial when date changes
+  var storedDate = localStorage.getItem('sic_qdate') || '';
+  var serial = storedDate === dateKey
+    ? (parseInt(localStorage.getItem('sic_qnum')) || 0) + 1
+    : 1;
+  localStorage.setItem('sic_qdate', dateKey);
+  localStorage.setItem('sic_qnum', serial);
+  return dateKey + '-' + String(serial).padStart(3, '0');
+}
+
+/* ═══════════════════════════════════════════
+   WHATSAPP SHARE
+═══════════════════════════════════════════ */
+function shareWhatsApp() {
+  if (!lastCalc) { toast('⚠ Calculate first'); return; }
+  var c   = lastCalc;
+  var s   = getSaved();
+  var now = new Date();
+  var dateStr  = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  var validDate = new Date(now.getTime() + s.validity * 86400000)
+    .toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+  var dimLine = c.hollow
+    ? 'OD: ' + c.od + ' mm | ID: ' + c.id_mm.toFixed(1) + ' mm | WT: ' + c.wt + ' mm'
+    : 'OD: ' + c.od + ' mm (Solid Rod)';
+
+  var text = [
+    '*' + s.company + '*',
+    '*SiC Heating Element — Quotation*',
+    '\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015',
+    '\ud83d\udccc *Specifications*',
+    'Type: ' + (c.hollow ? 'Hollow Tube' : 'Solid Rod'),
+    dimLine,
+    'Length: ' + c.len + ' mm',
+    'Volume: ' + fmt(c.vol, 3) + ' cm\u00B3',
+    'Weight: ' + fmt(c.wt_g, 2) + ' g  (' + fmt(c.wt_g / 1000, 5) + ' kg)',
+    '',
+    '\ud83d\udcb0 *Pricing*',
+    'Material Cost:  Rs. ' + fmtINR(c.cMat),
+    'Mfg / Handling: Rs. ' + fmtINR(c.mfgCost),
+    'Margin (' + c.margin + '%): Rs. ' + fmtINR(c.cMargin),
+    '*Unit Price: Rs. ' + fmtINR(c.price) + '*',
+    'Quantity: ' + c.qty + ' pcs',
+    '*TOTAL: Rs. ' + fmtINR(c.total) + '*',
+    '\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015',
+    '\ud83d\uddd3 Date: ' + dateStr + '  |  Valid until: ' + validDate,
+    '_' + s.terms + '_'
+  ].join('\n');
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+function toast(msg, bg) {
+  clearTimeout(toastTmr);
+  var el = document.getElementById('toast');
+  el.textContent   = msg;
+  el.style.background = bg || 'var(--accent)';
+  el.style.color   = '#000';
+  el.classList.add('show');
+  toastTmr = setTimeout(function() { el.classList.remove('show'); }, 2600);
+}
+
+/* ═══════════════════════════════════════════
+   PWA — SERVICE WORKER + MANIFEST
+═══════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  var swCode = [
+    "var CACHE='sic-v2';",
+    "self.addEventListener('install',function(e){self.skipWaiting();});",
+    "self.addEventListener('activate',function(e){",
+    "  e.waitUntil(caches.keys().then(function(ks){",
+    "    return Promise.all(ks.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));",
+    "  }));",
+    "});",
+    "self.addEventListener('fetch',function(e){",
+    "  e.respondWith(caches.match(e.request).then(function(r){",
+    "    return r||fetch(e.request).then(function(res){",
+    "      var cl=res.clone();",
+    "      caches.open(CACHE).then(function(c){c.put(e.request,cl);});",
+    "      return res;",
+    "    });",
+    "  }));",
+    "});"
+  ].join('');
+  var swBlob = new Blob([swCode], { type: 'application/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function() {});
+}
+
+// Web App Manifest (injected dynamically)
+(function() {
+  var manifest = {
+    name: 'SiC Element Calculator',
+    short_name: 'SiC Calc',
+    description: 'SiC Heating Element Volume, Weight & Pricing Calculator',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#0a0a0a',
+    theme_color: '#ff6b1a',
+    icons: [{
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%23ff6b1a'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='32' font-family='sans-serif' font-weight='bold' fill='%23000'%3ESiC%3C/text%3E%3C/svg%3E",
+      sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable'
+    }]
+  };
+  var blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  var link = document.createElement('link');
+  link.rel  = 'manifest';
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+})();
+</script>
+</body>
+</html>
