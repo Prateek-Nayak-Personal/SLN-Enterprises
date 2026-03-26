@@ -1917,6 +1917,7 @@
             if (!lastCalc) { toast('⚠ Calculate first'); return; }
             var c = lastCalc;
             var s = getSaved();
+            var terms = s.terms.replace(/{validity}/g, s.validity);
             var now = new Date();
             var dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
             var validDate = new Date(now.getTime() + s.validity * 86400000)
@@ -1948,7 +1949,7 @@
                 '*TOTAL: Rs. ' + fmtINR(c.total) + '*',
                 '\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015',
                 '\ud83d\uddd3 Date: ' + dateStr + '  |  Valid until: ' + validDate,
-                '_' + s.terms + '_'
+                '_' + terms + '_'
             ].join('\n');
 
             window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
